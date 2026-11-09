@@ -9,6 +9,12 @@
         state: present
         update_cache: yes
 
+    - name: Installing python3-docker (required by community.docker modules)
+      apt:
+        name: python3-docker
+        state: present
+        update_cache: yes
+
     - name: Cloning a repository from GitHub
       git:
         repo: "https://github.com/alxfli/App42PaaS.git"
@@ -45,6 +51,12 @@
         state: present
         update_cache: yes
 
+    - name: Installing python3-docker (required by community.docker modules)
+      apt:
+        name: python3-docker
+        state: present
+        update_cache: yes
+
     - name: Copying the archive to the production machine
       copy:
         src: /tmp/app42-web.tar
@@ -56,17 +68,53 @@
         source: load
         load_path: /home/ubuntu/app42-web.tar
 
-    - name: Starting a container
+    - name: Creating a dedicated Docker network for the app stack
+      community.docker.docker_network:
+        name: app42-net
+        state: present
+
+    - name: Starting MySQL container
+      community.docker.docker_container:
+        name: app42-db
+        image: mysql:5.7
+        state: started
+        restart_policy: always
+        networks:
+          - name: app42-net
+        ports:
+          - "3306:3306"
+        env:
+          MYSQL_ROOT_PASSWORD: "{{ db_password | default('changeme') }}"
+          MYSQL_DATABASE: "{{ db_name | default('appdb') }}"
+          MYSQL_ROOT_HOST: "%"
+        volumes:
+          - app42_db_data:/var/lib/mysql
+
+    - name: Waiting for MySQL to accept connections
+      community.docker.docker_container_exec:
+        container: app42-db
+        command: mysqladmin ping -h localhost -uroot -p{{ db_password | default('changeme') }}
+      register: mysql_ping
+      until: mysql_ping.rc == 0
+      retries: 20
+      delay: 5
+      changed_when: false
+
+    - name: Starting the application container
       community.docker.docker_container:
         name: app42-web
         image: app42-web:latest
         state: started
         restart_policy: always
+        networks:
+          - name: app42-net
         ports:
           - "80:8080"
         env:
-          DB_HOST: "{{ db_host | default('localhost') }}"
+          DB_HOST: "app42-db"
           DB_PORT: "3306"
           DB_USER: "root"
           DB_PASSWORD: "{{ db_password | default('changeme') }}"
-          DB_NAME: "appdb"
+          DB_NAME: "{{ db_name | default('appdb') }}"
+        depends_on:
+          - app42-db
