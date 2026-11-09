@@ -116,5 +116,3 @@
           DB_USER: "root"
           DB_PASSWORD: "{{ db_password | default('changeme') }}"
           DB_NAME: "{{ db_name | default('appdb') }}"
-        depends_on:
-          - app42-db
