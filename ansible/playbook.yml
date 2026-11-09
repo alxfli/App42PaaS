@@ -1,0 +1,72 @@
+---
+- name: Building a Java application
+  hosts: builder
+  become: yes
+  tasks:
+    - name: Installing Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Cloning a repository from GitHub
+      git:
+        repo: "https://github.com/alxfli/App42PaaS.git"
+        dest: /home/ubuntu/app
+        version: main
+
+    - name: Building a Docker image
+      community.docker.docker_image:
+        name: app42-web
+        tag: latest
+        source: build
+        build:
+          path: /home/ubuntu/app
+
+    - name: Saving the image to an archive
+      community.docker.docker_image:
+        name: app42-web:latest
+        archive_path: /home/ubuntu/app42-web.tar
+        source: local
+
+    - name: Retrieve the archive to the management machine
+      fetch:
+        src: /home/ubuntu/app42-web.tar
+        dest: /tmp/app42-web.tar
+        flat: yes
+
+- name: Launch to prod
+  hosts: prod
+  become: yes
+  tasks:
+    - name: Installing Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Copying the archive to the production machine
+      copy:
+        src: /tmp/app42-web.tar
+        dest: /home/ubuntu/app42-web.tar
+
+    - name: Loading image
+      community.docker.docker_image:
+        name: app42-web:latest
+        source: load
+        load_path: /home/ubuntu/app42-web.tar
+
+    - name: Starting a container
+      community.docker.docker_container:
+        name: app42-web
+        image: app42-web:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "80:8080"
+        env:
+          DB_HOST: "{{ db_host | default('localhost') }}"
+          DB_PORT: "3306"
+          DB_USER: "root"
+          DB_PASSWORD: "{{ db_password | default('changeme') }}"
+          DB_NAME: "appdb"
