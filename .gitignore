@@ -13,6 +13,7 @@ override.tf.json
 crash.log
 crash.*.log
 ansible/inventory.ini
+ansible/group_vars/prod.yml
 *.tar
 *.retry
 .cache/
