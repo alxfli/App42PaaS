@@ -40,3 +40,17 @@ Ensures the application only starts after the MySQL database is fully ready.
 5. Access the application
 
         http://localhost
+
+6. Terraform & Ansible
+
+        export YC_TOKEN=$(yc iam create-token)
+        export YC_CLOUD_ID=$(yc config get cloud-id)
+        export YC_FOLDER_ID=$(yc config get folder-id)
+
+        terraform -chdir=terraform init
+        terraform -chdir=terraform apply
+
+
+        Edit ansible/group_vars/prod.yml.example
+
+        ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
