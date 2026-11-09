@@ -53,4 +53,4 @@ Ensures the application only starts after the MySQL database is fully ready.
         cp ansible/group_vars/prod.yml.example ansible/group_vars/prod.yml
         Edit ansible/group_vars/prod.yml
 
-        ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
+        ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
