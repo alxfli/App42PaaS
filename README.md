@@ -50,7 +50,7 @@ Ensures the application only starts after the MySQL database is fully ready.
         terraform -chdir=terraform init
         terraform -chdir=terraform apply
 
-
-        Edit ansible/group_vars/prod.yml.example
+        cp ansible/group_vars/prod.yml.example ansible/group_vars/prod.yml
+        Edit ansible/group_vars/prod.yml
 
         ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
